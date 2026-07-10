@@ -533,8 +533,27 @@ def stack_encoder_layers(x, encoder_layer_params_list, num_heads, src_mask):
         
     return hidden_state
 
-# Step 43 - decoder_layer_masked_self_attention_sublayer (not yet solved)
-# TODO: implement
+# Step 43 - decoder_layer_masked_self_attention_sublayer
+import torch
+
+def decoder_layer_masked_self_attention_sublayer(y, w_q, w_k, w_v, w_o, gamma, beta, num_heads, tgt_mask):
+    """Run masked multi-head self-attention on y and wrap with residual add-and-norm.
+    
+    Shapes:
+        y: (B, L_tgt, d_model)
+        tgt_mask: (B, 1, L_tgt, L_tgt) causal/padding combined mask
+    """
+    # 1. Run Multi-Head Attention using 'y' for Query, Key, and Value
+    # The tgt_mask ensures auto-regressive decoding (no look-ahead)
+    attn_output = assemble_multi_head_attention_forward(
+        query=y, key=y, value=y, 
+        w_q=w_q, w_k=w_k, w_v=w_v, w_o=w_o, 
+        num_heads=num_heads, mask=tgt_mask
+    )
+    
+    # 2. Apply the residual shortcut and layer normalization
+    # Formula: LayerNorm(y + MaskedAttention(y))
+    return apply_residual_add_and_norm(attn_output, y, gamma, beta)
 
 # Step 44 - decoder_layer_cross_attention_sublayer (not yet solved)
 # TODO: implement
