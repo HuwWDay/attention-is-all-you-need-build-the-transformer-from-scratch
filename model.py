@@ -237,8 +237,36 @@ def apply_attention_weights_to_values(attention_weights, value):
     # TODO: combine attention weights (..., Lq, Lk) with value (..., Lk, d_v)
     return attention_weights @ value
 
-# Step 22 - scaled_dot_product_attention (not yet solved)
-# TODO: implement
+# Step 22 - scaled_dot_product_attention
+import torch
+import math
+
+def scale_attention_scores(scores, d_k):
+    """Divide raw attention scores by sqrt(d_k) to stabilize softmax inputs."""
+    return scores / math.sqrt(d_k)
+
+def scaled_dot_product_attention(query, key, value, mask=None):
+    """Run scaled dot-product attention; return (context, attention_weights)."""
+    d_k = query.shape[-1]
+    
+    # 1. Compute raw attention scores: Q @ K^T -> shape (B, H, L, L)
+    scores = compute_raw_attention_scores(query, key)
+    
+    # 2. Scale the scores by the square root of d_k
+    scaled_scores = scale_attention_scores(scores, d_k)
+    
+    # 3. Optionally apply the mask (replace False/blocked positions with -inf)
+    if mask is not None:
+        # Pass 'scaled_scores' here to preserve the scaling step!
+        scaled_scores = mask_attention_scores_with_neg_inf(scaled_scores, mask)
+        
+    # 4. Compute safe softmax attention weights across the last dimension -> shape (B, H, L, L)
+    attention_weights = softmax_attention_weights(scaled_scores)
+    
+    # 5. Mix with values: Weights @ V -> shape (B, H, L, d_k)
+    context = apply_attention_weights_to_values(attention_weights, value)
+    
+    return context, attention_weights
 
 # Step 23 - split_last_dim_into_heads (not yet solved)
 # TODO: implement
