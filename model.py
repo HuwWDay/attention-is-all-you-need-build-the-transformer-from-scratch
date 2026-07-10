@@ -653,8 +653,30 @@ def assemble_decoder_layer(y, encoder_output, layer_params, num_heads, src_mask,
     
     return layer_output
 
-# Step 47 - stack_decoder_layers (not yet solved)
-# TODO: implement
+# Step 47 - stack_decoder_layers
+def stack_decoder_layers(y, encoder_output, decoder_layer_params_list, num_heads, src_mask, tgt_mask):
+    """Sequentially apply each decoder layer to the running target hidden state.
+    
+    Inputs:
+        y: Initial target hidden state of shape (B, L_tgt, d_model)
+        encoder_output: Static encoder output of shape (B, L_src, d_model)
+        decoder_layer_params_list: List containing the parameter dictionaries for each block
+    """
+    # Initialize the running hidden state with the input target states
+    hidden_state = y
+    
+    # Sequentially route the state through each decoder layer
+    for layer_params in decoder_layer_params_list:
+        hidden_state = assemble_decoder_layer(
+            y=hidden_state,
+            encoder_output=encoder_output,
+            layer_params=layer_params,
+            num_heads=num_heads,
+            src_mask=src_mask,
+            tgt_mask=tgt_mask
+        )
+        
+    return hidden_state
 
 # Step 48 - apply_final_output_projection (not yet solved)
 # TODO: implement
