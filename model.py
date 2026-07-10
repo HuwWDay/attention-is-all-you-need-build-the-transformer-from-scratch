@@ -1424,8 +1424,23 @@ def append_tokens_to_beam_sequences(beam_sequences, beam_indices, token_ids):
     # 3. Concatenate along the sequence dimension (dim=-1)
     return torch.cat([parent_sequences, new_tokens_column], dim=-1)
 
-# Step 79 - mark_finished_beams (not yet solved)
-# TODO: implement
+# Step 79 - mark_finished_beams
+import torch
+
+def mark_finished_beams(token_ids, finished_flags, end_token_id):
+    """Update finished flags to True if the end token is reached or if already finished.
+    
+    Shapes:
+        token_ids: (k,)
+        finished_flags: (k,)
+    Returns:
+        Boolean tensor of shape (k,)
+    """
+    # 1. Create a boolean mask of beams that just emitted the end token
+    just_finished = (token_ids == end_token_id)
+    
+    # 2. Combine with the existing flags using logical OR
+    return finished_flags | just_finished
 
 # Step 80 - select_best_finished_beam (not yet solved)
 # TODO: implement
