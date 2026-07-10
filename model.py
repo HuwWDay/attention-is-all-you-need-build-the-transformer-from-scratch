@@ -346,8 +346,39 @@ def merge_heads_and_project_output(context, w_o, b_o):
     merged = merge_heads_back_to_model_dim(context)
     return apply_linear_projection(merged, w_o, b_o)
 
-# Step 31 - assemble_multi_head_attention_forward (not yet solved)
-# TODO: implement
+# Step 31 - assemble_multi_head_attention_forward
+import torch
+
+def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o, num_heads, mask=None):
+    """Run the complete forward pass for Multi-Head Attention.
+    
+    Inputs:
+        query, key, value: Input tensors of shape (B, L, d_model)
+        w_q, w_k, w_v: Linear projection weights for Q, K, V
+        w_o: Final output projection weight matrix
+        num_heads: Number of attention heads
+        mask: Optional padding/causal mask
+    """
+    # 1. Project inputs to Q, K, V matrices -> shapes: (B, L, d_model)
+    # Using your functional projection mapping
+    q = torch.matmul(query, w_q)
+    k = torch.matmul(key, w_k)
+    v = torch.matmul(value, w_v)
+    
+    # 2. Split into multi-head layouts -> shapes: (B, num_heads, L, d_k)
+    q_h, k_h, v_h = split_qkv_into_heads(q, k, v, num_heads)
+    
+    # 3. Run Scaled Dot-Product Attention -> context shape: (B, num_heads, L, d_k)
+    # This also extracts attention weights if you need them for downstream analytics
+    context_heads, attention_weights = scaled_dot_product_attention(q_h, k_h, v_h, mask=mask)
+    
+    # 4. Merge heads back into model dimension -> shape: (B, L, d_model)
+    merged_context = merge_heads_back_to_model_dim(context_heads)
+    
+    # 5. Output linear projection layer -> shape: (B, L, d_model)
+    output = torch.matmul(merged_context, w_o)
+    
+    return output
 
 # Step 32 - apply_ffn_first_linear_and_relu (not yet solved)
 # TODO: implement
