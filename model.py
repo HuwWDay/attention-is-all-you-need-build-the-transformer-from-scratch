@@ -241,10 +241,6 @@ def apply_attention_weights_to_values(attention_weights, value):
 import torch
 import math
 
-def scale_attention_scores(scores, d_k):
-    """Divide raw attention scores by sqrt(d_k) to stabilize softmax inputs."""
-    return scores / math.sqrt(d_k)
-
 def scaled_dot_product_attention(query, key, value, mask=None):
     """Run scaled dot-product attention; return (context, attention_weights)."""
     d_k = query.shape[-1]
