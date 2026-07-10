@@ -1373,8 +1373,33 @@ def compute_candidate_scores(beam_scores, next_token_log_probs):
     # TODO: add each beam's running log-prob to its row of next-token log probs.
     return beam_scores.unsqueeze(-1) + next_token_log_probs
 
-# Step 77 - select_top_k_candidates (not yet solved)
-# TODO: implement
+# Step 77 - select_top_k_candidates
+import torch
+
+def select_top_k_candidates(candidate_scores, k):
+    """Pick the top k (beam_index, token_id, score) triples from candidate_scores."""
+    # 1. Determine the vocabulary size to use for index translation later
+    vocab_size = candidate_scores.shape[-1]
+    
+    # 2. Flatten the 2D tensor into a 1D tensor
+    flat_scores = candidate_scores.view(-1)
+    
+    # 3. Find the global top k scores and their 1D indices
+    top_scores, flat_indices = torch.topk(flat_scores, k)
+    
+    # 4. Map the 1D flat indices back to their original 2D coordinates
+    # Integer division yields the row (which beam it came from)
+    beam_indices = flat_indices // vocab_size
+    
+    # Modulo division yields the column (which token ID in the vocabulary)
+    token_ids = flat_indices % vocab_size
+    
+    # 5. Package and return the results
+    return {
+        'beam_indices': beam_indices,
+        'token_ids': token_ids,
+        'scores': top_scores
+    }
 
 # Step 78 - append_tokens_to_beam_sequences (not yet solved)
 # TODO: implement
