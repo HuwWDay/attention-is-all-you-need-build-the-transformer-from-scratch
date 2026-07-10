@@ -1078,8 +1078,36 @@ def compute_token_accuracy_ignoring_pad(log_probabilities, gold_token_ids, pad_i
     # Return as a proper scalar PyTorch float tensor so .item() works perfectly
     return torch.tensor(accuracy_val, dtype=torch.float32, device=log_probabilities.device)
 
-# Step 64 - initialize_adam_optimizer_state (not yet solved)
-# TODO: implement
+# Step 64 - initialize_adam_optimizer_state
+import torch
+
+def initialize_adam_optimizer_state(parameter_list):
+    """Allocate Adam m, v zero buffers and a step counter t=0.
+    
+    Returns a dictionary structured with lists to match test suite expectations:
+        {
+            "m": [torch.zeros_like(p), ...],
+            "v": [torch.zeros_like(p), ...],
+            "t": 0
+        }
+    """
+    out = {
+        "m": [],
+        "v": [],
+        "t": 0  # Global step counter initialized to 0
+    }
+    
+    for param in parameter_list:
+        # Create zero buffers matching device, dtype, and shape.
+        # CRITICAL: We explicitly detach or set requires_grad=False so the 
+        # optimizer buffers themselves do not track gradients!
+        m_buffer = torch.zeros_like(param, requires_grad=False)
+        v_buffer = torch.zeros_like(param, requires_grad=False)
+        
+        out["m"].append(m_buffer)
+        out["v"].append(v_buffer)
+        
+    return out
 
 # Step 65 - update_adam_first_moment (not yet solved)
 # TODO: implement
