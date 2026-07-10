@@ -972,8 +972,24 @@ def build_uniform_smoothing_distribution(shape, vocab_size, epsilon):
     # TODO: return a float tensor of `shape` filled with epsilon / (vocab_size - 2).
     return epsilon/(vocab_size-2)*torch.ones(shape)
 
-# Step 59 - set_confidence_on_gold_tokens (not yet solved)
-# TODO: implement
+# Step 59 - set_confidence_on_gold_tokens
+import torch
+
+def set_confidence_on_gold_tokens(smoothed_distribution, gold_token_ids, confidence):
+    """Place confidence mass at gold-token positions of a smoothed target distribution.
+    
+    This version creates an independent copy to protect the input tensor from in-place mutations.
+    """
+    # 1. Clone the input distribution to ensure the original tensor isn't mutated
+    out_distribution = smoothed_distribution.clone()
+    
+    # 2. Reshape the 2D gold indices to (B, T, 1) for 3D broadcasting compatibility
+    index_tensor = gold_token_ids.unsqueeze(-1)
+    
+    # 3. Scatter the confidence values into the fresh copy in-place
+    out_distribution.scatter_(dim=-1, index=index_tensor, value=confidence)
+    
+    return out_distribution
 
 # Step 60 - zero_pad_column_and_pad_token_rows (not yet solved)
 # TODO: implement
