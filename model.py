@@ -1044,8 +1044,39 @@ def average_loss_over_non_pad_tokens(total_loss, gold_token_ids, pad_id):
     # 4. Return the normalized average loss
     return total_loss / non_pad_count
 
-# Step 63 - compute_token_accuracy_ignoring_pad (not yet solved)
-# TODO: implement
+# Step 63 - compute_token_accuracy_ignoring_pad
+import torch
+
+def compute_token_accuracy_ignoring_pad(log_probabilities, gold_token_ids, pad_id):
+    """Compute token accuracy tracking only valid (non-pad) positions.
+    
+    Shapes:
+        log_probabilities: (B, T, V)
+        gold_token_ids: (B, T)
+    Returns:
+        A scalar float tensor in [0, 1]
+    """
+    # 1. Get the predicted token IDs by taking argmax along the vocabulary dimension
+    predictions = torch.argmax(log_probabilities, dim=-1)
+    
+    # 2. Determine which positions match the target gold labels
+    correct_mask = (predictions == gold_token_ids)
+    
+    # 3. Create a mask identifying the valid, non-pad tokens
+    non_pad_mask = (gold_token_ids != pad_id)
+    
+    # 4. Isolate the correct predictions that correspond to valid tokens
+    valid_correct = correct_mask & non_pad_mask
+    
+    # 5. Calculate totals and handle empty/edge-case conditions cleanly
+    total_valid = non_pad_mask.sum().item()
+    if total_valid == 0:
+        return torch.tensor(0.0, dtype=torch.float32, device=log_probabilities.device)
+        
+    accuracy_val = valid_correct.sum().item() / total_valid
+    
+    # Return as a proper scalar PyTorch float tensor so .item() works perfectly
+    return torch.tensor(accuracy_val, dtype=torch.float32, device=log_probabilities.device)
 
 # Step 64 - initialize_adam_optimizer_state (not yet solved)
 # TODO: implement
