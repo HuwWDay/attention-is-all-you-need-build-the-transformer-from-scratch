@@ -788,8 +788,41 @@ def run_transformer_forward(src_ids, tgt_ids, model_params, num_heads, pad_id):
     
     return log_probabilities
 
-# Step 52 - init_encoder_layer_parameters (not yet solved)
-# TODO: implement
+# Step 52 - init_encoder_layer_parameters
+import torch
+import math
+
+def init_encoder_layer_parameters(d_model, num_heads, d_ff):
+    """Return a dict of leaf tensors with requires_grad=True for one encoder layer."""
+    out = {}
+    
+    # Sinusoidal frequency or projection bound scales (Xavier Uniform bound: 1 / sqrt(din))
+    bound_attn = 1.0 / math.sqrt(d_model)
+    bound_ffn = 1.0 / math.sqrt(d_ff)
+    
+    # 1. Multi-Head Attention Weights (Shapes: (d_model, d_model))
+    # Filled uniformly inside [-bound, bound]
+    out["w_q"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_k"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_v"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_o"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+
+    # 2. Feed-Forward Network Projections (Correct shapes relative to input/output dims)
+    out["w1"] = (torch.rand((d_model, d_ff)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w2"] = (torch.rand((d_ff, d_model)) * 2 * bound_ffn - bound_ffn).detach().requires_grad_(True)
+
+    # Correcting bias shapes to match output channel dimension exactly
+    out["b1"] = torch.zeros(d_ff, requires_grad=True)    # Matches w1 output -> (d_ff,)
+    out["b2"] = torch.zeros(d_model, requires_grad=True) # Matches w2 output -> (d_model,)
+
+    # 3. Layer Normalization Parameters (Scale initialized to 1s, shift initialized to 0s)
+    out["attn_gamma"] = torch.ones(d_model, requires_grad=True)
+    out["attn_beta"] = torch.zeros(d_model, requires_grad=True)
+    
+    out["ffn_gamma"] = torch.ones(d_model, requires_grad=True)
+    out["ffn_beta"] = torch.zeros(d_model, requires_grad=True)
+
+    return out
 
 # Step 53 - init_decoder_layer_parameters (not yet solved)
 # TODO: implement
