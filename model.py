@@ -133,8 +133,20 @@ def build_sinusoidal_positional_encoding(max_len, d_model):
     
     return pe
 
-# Step 13 - add_positional_encoding_to_embeddings (not yet solved)
-# TODO: implement
+# Step 13 - add_positional_encoding_to_embeddings
+import torch
+
+def add_positional_encoding_to_embeddings(embedded_batch, positional_encoding):
+    # 1. Get the sequence length (L) from the embedded batch
+    # Note: Use embedded_batch.shape or embedded_batch.size(), not torch.shape()
+    B, L, d_model = embedded_batch.shape
+    
+    # 2. Slice the positional encoding to match the sequence length L
+    # Shape transitions from (max_len, d_model) -> (L, d_model)
+    pe_sliced = positional_encoding[:L, :]
+    
+    # 3. Add them together. PyTorch broadcasts (L, d_model) across the batch dimension B.
+    return embedded_batch + pe_sliced
 
 # Step 14 - build_padding_mask (not yet solved)
 # TODO: implement
