@@ -555,8 +555,32 @@ def decoder_layer_masked_self_attention_sublayer(y, w_q, w_k, w_v, w_o, gamma, b
     # Formula: LayerNorm(y + MaskedAttention(y))
     return apply_residual_add_and_norm(attn_output, y, gamma, beta)
 
-# Step 44 - decoder_layer_cross_attention_sublayer (not yet solved)
-# TODO: implement
+# Step 44 - decoder_layer_cross_attention_sublayer
+import torch
+
+def decoder_layer_cross_attention_sublayer(y, encoder_output, w_q, w_k, w_v, w_o, gamma, beta, num_heads, src_mask):
+    """Run multi-head cross-attention and wrap with add-and-norm.
+    
+    This version automatically handles both 2D (B, L_src) and 4D (B, 1, 1, L_src) masks.
+    """
+    # If the mask is 2D (B, L_src), expand it to 4D (B, 1, 1, L_src)
+    # so it broadcasts cleanly against attention scores (B, H, L_tgt, L_src)
+    if src_mask is not None and src_mask.dim() == 2:
+        src_mask = src_mask[:, None, None, :]
+    # ───────────────────────────────────────────────────────────────────
+
+    # 1. Run Multi-Head Attention
+    attn_output = assemble_multi_head_attention_forward(
+        query=y, 
+        key=encoder_output, 
+        value=encoder_output, 
+        w_q=w_q, w_k=w_k, w_v=w_v, w_o=w_o, 
+        num_heads=num_heads, 
+        mask=src_mask
+    )
+    
+    # 2. Apply Residual Connection followed by Layer Normalization
+    return apply_residual_add_and_norm(attn_output, y, gamma, beta)
 
 # Step 45 - decoder_layer_feed_forward_sublayer (not yet solved)
 # TODO: implement
