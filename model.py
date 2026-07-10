@@ -903,8 +903,41 @@ def init_embedding_and_projection_parameters(vocab_size, d_model, tie_weights=Tr
         
     return out
 
-# Step 55 - collect_model_parameters_into_list (not yet solved)
-# TODO: implement
+# Step 55 - collect_model_parameters_into_list
+import torch
+
+def collect_model_parameters_into_list(encoder_layer_params, decoder_layer_params, embedding_params):
+    """Walk encoder layers, decoder layers, and embedding dicts to return a flat, deduped list of tensors.
+    
+    Preserves strict insertion order:
+        1. Encoder layer parameters (sequentially layer-by-layer)
+        2. Decoder layer parameters (sequentially layer-by-layer)
+        3. Embedding / Projection parameters
+    """
+    param_list = []
+    seen_ids = set()
+    
+    # Helper function to safely append unique tensors by their physical memory address id
+    def add_unique_tensors_from_dict(d):
+        for tensor in d.values():
+            if isinstance(tensor, torch.Tensor):
+                tensor_id = id(tensor)
+                if tensor_id not in seen_ids:
+                    seen_ids.add(tensor_id)
+                    param_list.append(tensor)
+
+    # 1. Gather from Encoder Layers (iterating through the list of layer dictionaries)
+    for layer in encoder_layer_params:
+        add_unique_tensors_from_dict(layer)
+        
+    # 2. Gather from Decoder Layers (iterating through the list of layer dictionaries)
+    for layer in decoder_layer_params:
+        add_unique_tensors_from_dict(layer)
+        
+    # 3. Gather from Embedding / Output Projection Dictionary
+    add_unique_tensors_from_dict(embedding_params)
+    
+    return param_list
 
 # Step 56 - shift_targets_right_with_start_token (not yet solved)
 # TODO: implement
