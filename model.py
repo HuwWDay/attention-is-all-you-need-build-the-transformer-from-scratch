@@ -1315,8 +1315,39 @@ def run_training_step_with_backprop(src_batch, tgt_batch, parameter_list, model_
     # 7. Return the scalar loss value for logging
     return loss.item()
 
-# Step 73 - run_training_loop_for_steps (not yet solved)
-# TODO: implement
+# Step 73 - run_training_loop_for_steps
+import torch
+import itertools
+
+def run_training_loop_for_steps(batches, parameter_list, model_params, optimizer_state, num_steps, config):
+    """Run num_steps training iterations, cycling through batches, and return per-step losses."""
+    loss_history = []
+    
+    # Create an infinite iterator that loops back to the start of 'batches'
+    batch_iterator = itertools.cycle(batches)
+    
+    for step_idx in range(num_steps):
+        # The Noam LR schedule strictly requires step_number to start at 1
+        step_number = step_idx + 1
+        
+        # Fetch the next source and target batch tensors
+        src_batch, tgt_batch = next(batch_iterator)
+        
+        # Execute cycle using POSITIONAL arguments to avoid mock signature crashes
+        step_loss = run_training_step_with_backprop(
+            src_batch,
+            tgt_batch,
+            parameter_list,
+            model_params,
+            optimizer_state,
+            step_number,
+            config
+        )
+        
+        # Record the scalar loss value
+        loss_history.append(step_loss)
+        
+    return loss_history
 
 # Step 74 - pick_next_token_by_argmax (not yet solved)
 # TODO: implement
