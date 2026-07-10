@@ -148,8 +148,17 @@ def add_positional_encoding_to_embeddings(embedded_batch, positional_encoding):
     # 3. Add them together. PyTorch broadcasts (L, d_model) across the batch dimension B.
     return embedded_batch + pe_sliced
 
-# Step 14 - build_padding_mask (not yet solved)
-# TODO: implement
+# Step 14 - build_padding_mask
+import torch
+
+def build_padding_mask(token_ids, pad_id):
+    """Return a (B, 1, 1, L) bool mask: True where token_ids != pad_id."""
+    # 1. Create a 2D boolean mask of shape (B, L): True for valid tokens, False for padding
+    mask = (token_ids != pad_id)
+    
+    # 2. Reshape to (B, 1, 1, L) so it correctly broadcasts against attention scores (B, H, L, L)
+    # Using None indexing is a clean, standard way to inject singleton dimensions
+    return mask[:, None, None, :]
 
 # Step 15 - build_causal_mask (not yet solved)
 # TODO: implement
