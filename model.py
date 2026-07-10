@@ -322,11 +322,18 @@ def project_to_query_key_value(x, w_q, b_q, w_k, b_k, w_v, b_v):
 import torch
 
 def split_qkv_into_heads(q, k, v, num_heads):
-    # TODO: split each of q, k, v into (B, num_heads, L, d_k) and return as a tuple
+    """Split each of q, k, v into (B, num_heads, L, d_k) and return as a tuple."""
+    out = []
     for tensor in [q, k, v]:
+        # 1. Reshape from (B, L, d_model) -> (B, L, num_heads, d_k)
         split = split_last_dim_into_heads(tensor, num_heads)
-        tranps = transpose_heads_before_sequence(split)
-        yield tranps
+        
+        # 2. Permute from (B, L, num_heads, d_k) -> (B, num_heads, L, d_k)
+        transp = transpose_heads_before_sequence(split)
+        
+        out.append(transp)
+    # Return as a clean, indexable tuple: (split_q, split_k, split_v)
+    return tuple(out)
 
 # Step 29 - multi_head_scaled_dot_product_attention (not yet solved)
 # TODO: implement
