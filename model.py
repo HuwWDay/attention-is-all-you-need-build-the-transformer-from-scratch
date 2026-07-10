@@ -1133,8 +1133,51 @@ def apply_adam_bias_correction(m_t, v_t, beta1, beta2, step):
     # TODO: divide each moment by (1 - beta**step) using its respective beta
     return m_t / (1-beta1**step), v_t/(1-beta2**step)
 
-# Step 69 - apply_adam_step_to_all_parameters (not yet solved)
-# TODO: implement
+# Step 69 - apply_adam_step_to_all_parameters
+# ── Step 069  apply_adam_step_to_all_parameters ──
+import torch
+
+def apply_adam_step_to_all_parameters(parameter_list, optimizer_state, learning_rate, beta1=0.9, beta2=0.98, epsilon=1e-9):
+    """Run one full Adam update loop over every parameter using modular primitives.
+    
+    Modifies parameter values in place and returns the updated optimizer state.
+    """
+    # 1. Global step counter increment
+    optimizer_state["t"] += 1
+    step = optimizer_state["t"]
+    
+    # 2. Iterate through parameters and their aligned tracking slots
+    for idx, param in enumerate(parameter_list):
+        # Skip parameters whose .grad is None
+        if param.grad is None:
+            continue
+            
+        # Extract the current gradient tensor
+        g = param.grad.data
+        
+        # Pull matching tracking buffers from the state lists
+        m_prev = optimizer_state["m"][idx]
+        v_prev = optimizer_state["v"][idx]
+        
+        # 3. Call your primitives to compute updated moments (non-destructively/functionally)
+        m_t = update_adam_first_moment(m_prev, g, beta1)
+        v_t = update_adam_second_moment(v_prev, g, beta2)
+        
+        # Save the updated moments back into the optimizer state tracking lists
+        # (Using .copy_ or re-assignment to preserve the buffer arrays)
+        optimizer_state["m"][idx] = m_t
+        optimizer_state["v"][idx] = v_t
+        
+        # 4. Call your bias correction primitive
+        m_hat, v_hat = apply_adam_bias_correction(m_t, v_t, beta1, beta2, step)
+        
+        # 5. Compute step delta adjustment vector
+        step_delta = (learning_rate * m_hat) / (torch.sqrt(v_hat) + epsilon)
+        
+        # 6. Mutate the active parameter weights tensor directly in-place
+        param.data.sub_(step_delta)
+        
+    return optimizer_state
 
 # Step 70 - zero_all_parameter_gradients (not yet solved)
 # TODO: implement
