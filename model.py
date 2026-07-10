@@ -7,21 +7,24 @@ Assembled from your step-by-step solutions.
 import numpy as np
 
 # Step 1 - build_token_to_id_vocab
-def build_token_to_id_vocab(sentences, specials=('<pad>', '<bos>', '<eos>', '<unk>')):
-    # TODO: build a token-to-id dict with specials first, then corpus tokens in first-seen order.
-    out = {}
-    for i in range(len(specials)):
-        out[specials[i]] = i 
-    n = len(sentences) + 2
+def build_token_to_id_vocab(sentences, specials=['<pad>', '<bos>', '<eos>', '<unk>']):
+    # 1. Start with special tokens to reserve the first few IDs
+    # Based on your expectation, <unk> needs to be at index 3
+    token_to_id = {token: idx for idx, token in enumerate(specials)}
+    
+    # 2. Extract unique words from the sentences
+    unique_words = []
     for sentence in sentences:
-        words = sentence.split()
-        for word in words:
-            if word in out.keys():
-                continue 
-            else:
-                out[word] = n 
-                n += 1
-    return out
+        for word in sentence.split():
+            if word not in token_to_id and word not in unique_words:
+                unique_words.append(word)
+                
+    
+    # 3. Add the unique words to the vocabulary
+    for word in unique_words:
+        token_to_id[word] = len(token_to_id)
+        
+    return token_to_id
 
 # Step 2 - build_id_to_token_vocab
 def build_id_to_token_vocab(token_to_id):
@@ -36,12 +39,11 @@ def build_id_to_token_vocab(token_to_id):
 
 # Step 3 - encode_sentence_to_ids
 def encode_sentence_to_ids(sentence, token_to_id, unk_token='<unk>'):
-    # TODO: convert whitespace tokens of `sentence` to ids via `token_to_id`, using `unk_token`'s id for OOV
-    out = []
-    for word in sentence.split():
-        temp = token_to_id.get(word, unk_token)
-        out.append(temp)
-    return out
+    # Get the default fallback ID for unknown tokens
+    unk_id = token_to_id[unk_token]
+    
+    # Split by whitespace and map each token to its ID
+    return [token_to_id.get(word, unk_id) for word in sentence.split()]
 
 # Step 4 - decode_ids_to_tokens (not yet solved)
 # TODO: implement
