@@ -582,8 +582,25 @@ def decoder_layer_cross_attention_sublayer(y, encoder_output, w_q, w_k, w_v, w_o
     # 2. Apply Residual Connection followed by Layer Normalization
     return apply_residual_add_and_norm(attn_output, y, gamma, beta)
 
-# Step 45 - decoder_layer_feed_forward_sublayer (not yet solved)
-# TODO: implement
+# Step 45 - decoder_layer_feed_forward_sublayer
+import torch
+
+def decoder_layer_feed_forward_sublayer(y, w1, b1, w2, b2, gamma, beta):
+    """Run the position-wise FFN on y and wrap it with residual add-and-norm.
+    
+    Shapes:
+        y: (B, L_tgt, d_model)
+        w1: (d_model, d_ff)
+        b1: (d_ff,)
+        w2: (d_ff, d_model)
+        b2: (d_model,)
+    """
+    # 1. Run the position-wise feed-forward network
+    ffn_output = position_wise_feed_forward_network(y, w1, b1, w2, b2)
+    
+    # 2. Apply the residual shortcut and layer normalization
+    # Formula: LayerNorm(y + FFN(y))
+    return apply_residual_add_and_norm(ffn_output, y, gamma, beta)
 
 # Step 46 - assemble_decoder_layer (not yet solved)
 # TODO: implement
