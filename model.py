@@ -699,8 +699,94 @@ def apply_log_softmax_over_vocab(logits):
     # TODO: Convert decoder logits (B, T, V) into log probabilities over the vocabulary axis.
     return torch.nn.functional.log_softmax(logits, dim=-1)
 
-# Step 51 - run_transformer_forward (not yet solved)
-# TODO: implement
+# Step 51 - run_transformer_forward
+import torch
+
+def run_transformer_forward(src_ids, tgt_ids, model_params, num_heads, pad_id):
+    """Wire the full encoder-decoder Transformer together.
+    
+    Inputs:
+        src_ids: (B, L_src) LongTensor
+        tgt_ids: (B, L_tgt) LongTensor
+        model_params: Dict containing 'token_embedding', 'encoder_layers', 
+                      'decoder_layers', and 'output_projection'
+        num_heads: Number of attention heads
+        pad_id: Padding token ID
+        
+    Output shape: (B, L_tgt, vocab_size) holding log-probabilities
+    """
+    # ─── 1. MASK GENERATION ──────────────────────────────────────────
+    # Source mask: Used by both Encoder Self-Attention AND Decoder Cross-Attention
+    src_padding_mask = build_padding_mask(src_ids, pad_id)
+    
+    # Target mask: Elementwise AND of padding mask and causal look-ahead mask
+    tgt_padding_mask = build_padding_mask(tgt_ids, pad_id)
+    causal_mask = build_causal_mask(tgt_ids.shape[-1])
+    tgt_mask = combine_padding_and_causal_masks(tgt_padding_mask, causal_mask)
+
+    # ─── 2. EMBEDDINGS & POSITIONAL ENCODINGS ────────────────────────
+    emb_weights = model_params["token_embedding"]
+    d_model = emb_weights.shape[-1]  # Safely infer feature dimension
+    
+    # Embed tokens -> Shape: (B, S, D) and (B, T, D)
+    src_embedded = torch.embedding(emb_weights, src_ids)
+    tgt_embedded = torch.embedding(emb_weights, tgt_ids)
+    
+    # Scale embeddings by sqrt(d_model)
+    src_scaled = scale_embeddings_by_sqrt_d_model(src_embedded, d_model)
+    tgt_scaled = scale_embeddings_by_sqrt_d_model(tgt_embedded, d_model)
+    
+    # Address the "Common Pitfall": Ensure PE is long enough for both sequences
+    max_len = max(src_ids.shape[-1], tgt_ids.shape[-1])
+    
+    # Fetch pre-computed PEs if available, otherwise generate dynamically
+    if "src_pos_encoding" in model_params:
+        src_pe = model_params["src_pos_encoding"]
+        tgt_pe = model_params["tgt_pos_encoding"]
+    elif "embeddings" in model_params and "src_pos_encoding" in model_params["embeddings"]:
+        src_pe = model_params["embeddings"]["src_pos_encoding"]
+        tgt_pe = model_params["embeddings"]["tgt_pos_encoding"]
+    else:
+        # Build one shared PE matrix large enough for the longest sequence
+        shared_pe = build_sinusoidal_positional_encoding(max_len, d_model).to(src_ids.device)
+        src_pe = shared_pe
+        tgt_pe = shared_pe
+    
+    # Add PE (the helper function handles slicing internally)
+    src_states = add_positional_encoding_to_embeddings(src_scaled, src_pe)
+    tgt_states = add_positional_encoding_to_embeddings(tgt_scaled, tgt_pe)
+
+    # ─── 3. ENCODER & DECODER STACKS ─────────────────────────────────
+    # Run Encoder to produce static representations
+    encoder_output = stack_encoder_layers(
+        x=src_states, 
+        encoder_layer_params_list=model_params["encoder_layers"], 
+        num_heads=num_heads, 
+        src_mask=src_padding_mask
+    )
+    
+    # Run Decoder auto-regressively over target states
+    # CRITICAL: Pass src_padding_mask for cross-attention, tgt_mask for self-attention
+    decoder_output = stack_decoder_layers(
+        y=tgt_states, 
+        encoder_output=encoder_output, 
+        decoder_layer_params_list=model_params["decoder_layers"], 
+        num_heads=num_heads, 
+        src_mask=src_padding_mask,  
+        tgt_mask=tgt_mask
+    )
+
+    # ─── 4. LOGITS PROJECTION & PROBABILITIES ────────────────────────
+    # Extract the dedicated output projection weight: shape (vocab_size, d_model)
+    out_proj_weight = model_params["output_projection"]
+    
+    # Project (B, T, D) -> (B, T, V)
+    logits = apply_final_output_projection(decoder_output, out_proj_weight, output_projection_bias=None)
+    
+    # Convert to log probabilities over the vocabulary dimension (axis -1)
+    log_probabilities = apply_log_softmax_over_vocab(logits)
+    
+    return log_probabilities
 
 # Step 52 - init_encoder_layer_parameters (not yet solved)
 # TODO: implement
