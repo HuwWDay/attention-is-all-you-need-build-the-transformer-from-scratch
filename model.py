@@ -210,8 +210,24 @@ def mask_attention_scores_with_neg_inf(scores, mask):
     # TODO: replace blocked positions of scores with negative infinity
     return scores.masked_fill(~mask, float("-inf"))
 
-# Step 20 - softmax_attention_weights (not yet solved)
-# TODO: implement
+# Step 20 - softmax_attention_weights
+import torch
+
+def softmax_attention_weights(masked_scores):
+    """Softmax over the last axis, safely turning entirely -inf rows into all zeros without NaN."""
+    # 1. Identify rows that are completely filled with -inf 
+    # (If the maximum value along the last axis is -inf, the whole row is -inf)
+    is_fully_masked = (masked_scores.max(dim=-1, keepdim=True).values == float('-inf'))
+    
+    # 2. Replace -inf with 0.0 only in those fully masked rows to prevent 0/0 NaN
+    # We use torch.where(condition, x, y) -> if condition is True, take from x, else y
+    safe_scores = torch.where(is_fully_masked, torch.zeros_like(masked_scores), masked_scores)
+    
+    # 3. Compute standard softmax along the last axis
+    weights = torch.nn.functional.softmax(safe_scores, dim=-1)
+    
+    # 4. Force the fully masked rows back to absolute zero
+    return torch.where(is_fully_masked, torch.zeros_like(weights), weights)
 
 # Step 21 - apply_attention_weights_to_values (not yet solved)
 # TODO: implement
