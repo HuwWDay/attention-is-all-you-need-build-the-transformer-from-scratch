@@ -887,15 +887,15 @@ def init_embedding_and_projection_parameters(vocab_size, d_model, tie_weights=Tr
     # Compute uniform bounds based on standard hidden feature dimension
     bound = 1.0 / math.sqrt(d_model)
     
-    # 1. Allocate Source Token Embeddings
+    # 1. Allocate Source Token Embeddings independently
     out["src_embedding"] = (torch.rand((vocab_size, d_model)) * 2 * bound - bound).detach().requires_grad_(True)
     
-    # 2. Allocate Target Token Embeddings
+    # 2. Allocate Target Token Embeddings independently
     out["tgt_embedding"] = (torch.rand((vocab_size, d_model)) * 2 * bound - bound).detach().requires_grad_(True)
     
     # 3. Handle Output Projection Weight Allocation
     if tie_weights:
-        # POINT TO THE EXACT SAME TENSOR MEMORY OBJECT
+        # POINT TO THE EXACT SAME TENSOR MEMORY OBJECT AS TGT
         out["output_projection"] = out["tgt_embedding"]
     else:
         # Allocate an entirely independent weight matrix
@@ -1191,8 +1191,69 @@ def zero_all_parameter_gradients(parameter_list):
             # which is faster and more efficient than filling it with zeros.
             param.grad = None
 
-# Step 71 - compute_batch_training_loss (not yet solved)
-# TODO: implement
+# Step 71 - compute_batch_training_loss
+import torch
+
+def compute_batch_training_loss(src_batch, tgt_batch, model_params, config):
+    """Perform one teacher-forced forward pass and return the label-smoothed KL loss.
+    
+    The returned scalar tensor remains attached to the autograd graph for .backward().
+    """
+    # 1. Read hyperparameters directly from the config dictionary
+    num_heads = config["num_heads"]
+    pad_id = config["pad_id"]
+    start_id = config["start_id"]
+    smoothing_epsilon = config["smoothing"]
+    
+    # 2. Build decoder input by shifting target sequence right with the start token
+    decoder_input_ids = shift_targets_right_with_start_token(tgt_batch, start_id)
+    
+    # 3. Execute the full Transformer forward pass
+    # run_transformer_forward handles embeddings, positional encoding, and masks internally.
+    log_probabilities = run_transformer_forward(
+        src_ids=src_batch,
+        tgt_ids=decoder_input_ids,
+        model_params=model_params,
+        num_heads=num_heads,
+        pad_id=pad_id
+    )
+    
+    # 4. Construct the smoothed target distribution against the unshifted gold tokens
+    vocab_size = log_probabilities.shape[-1]
+    confidence = 1.0 - smoothing_epsilon
+    
+    # Allocate the uniform background distribution grid
+    uniform_dist = build_uniform_smoothing_distribution(
+        target_shape=log_probabilities.shape, 
+        vocab_size=vocab_size, 
+        epsilon=smoothing_epsilon
+    )
+    
+    # Scatter confidence peaks onto unshifted target positions
+    smoothed_dist = set_confidence_on_gold_tokens(
+        smoothed_distribution=uniform_dist, 
+        gold_token_ids=tgt_batch, 
+        confidence=confidence
+    )
+    
+    # Clean up padding columns and row targets
+    cleaned_target_dist = zero_pad_column_and_pad_token_rows(
+        smoothed_distribution=smoothed_dist, 
+        gold_token_ids=tgt_batch, 
+        pad_id=pad_id
+    )
+    
+    # 5. Compute the total aggregated KL loss over all entries
+    total_kl_loss = compute_label_smoothed_kl_loss(log_probabilities, cleaned_target_dist)
+    
+    # 6. Reduce the loss by averaging over non-pad tokens exclusively
+    average_loss = average_loss_over_non_pad_tokens(
+        total_loss=total_kl_loss, 
+        gold_token_ids=tgt_batch, 
+        pad_id=pad_id
+    )
+    
+    return average_loss
 
 # Step 72 - run_training_step_with_backprop (not yet solved)
 # TODO: implement
