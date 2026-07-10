@@ -870,8 +870,38 @@ def init_decoder_layer_parameters(d_model, num_heads, d_ff):
     
     return out
 
-# Step 54 - init_embedding_and_projection_parameters (not yet solved)
-# TODO: implement
+# Step 54 - init_embedding_and_projection_parameters
+import torch
+import math
+
+def init_embedding_and_projection_parameters(vocab_size, d_model, tie_weights=True):
+    """Allocate src/tgt embeddings and output projection (optionally tied).
+    
+    Returns a dict with keys:
+        'src_embedding': (vocab_size, d_model)
+        'tgt_embedding': (vocab_size, d_model)
+        'output_projection': (vocab_size, d_model)
+    """
+    out = {}
+    
+    # Compute uniform bounds based on standard hidden feature dimension
+    bound = 1.0 / math.sqrt(d_model)
+    
+    # 1. Allocate Source Token Embeddings
+    out["src_embedding"] = (torch.rand((vocab_size, d_model)) * 2 * bound - bound).detach().requires_grad_(True)
+    
+    # 2. Allocate Target Token Embeddings
+    out["tgt_embedding"] = (torch.rand((vocab_size, d_model)) * 2 * bound - bound).detach().requires_grad_(True)
+    
+    # 3. Handle Output Projection Weight Allocation
+    if tie_weights:
+        # POINT TO THE EXACT SAME TENSOR MEMORY OBJECT
+        out["output_projection"] = out["tgt_embedding"]
+    else:
+        # Allocate an entirely independent weight matrix
+        out["output_projection"] = (torch.rand((vocab_size, d_model)) * 2 * bound - bound).detach().requires_grad_(True)
+        
+    return out
 
 # Step 55 - collect_model_parameters_into_list (not yet solved)
 # TODO: implement
