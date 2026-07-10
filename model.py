@@ -475,8 +475,46 @@ def encoder_layer_feed_forward_sublayer(x, w1, b1, w2, b2, gamma, beta):
     # Formula: LayerNorm(x + FFN(x))
     return apply_residual_add_and_norm(ffn_output, x, gamma, beta)
 
-# Step 41 - assemble_encoder_layer (not yet solved)
-# TODO: implement
+# Step 41 - assemble_encoder_layer
+def assemble_encoder_layer(x, layer_params, num_heads, src_mask):
+    """Chain the self-attention sublayer and the feed-forward sublayer using layer_params.
+    
+    Shapes:
+        x: (B, L, d_model)
+        src_mask: (B, 1, 1, L) padding mask
+    """
+    # 1. Cleanly unpack all parameters from the layer_params dictionary
+    w_q = layer_params["w_q"]
+    w_k = layer_params["w_k"]
+    w_v = layer_params["w_v"]
+    w_o = layer_params["w_o"]
+    
+    w1 = layer_params["w1"]
+    b1 = layer_params["b1"]
+    w2 = layer_params["w2"]
+    b2 = layer_params["b2"]
+    
+    attn_gamma = layer_params["attn_gamma"]
+    attn_beta = layer_params["attn_beta"]
+    ffn_gamma = layer_params["ffn_gamma"]
+    ffn_beta = layer_params["ffn_beta"]
+
+    # 2. Sublayer 1: Multi-Head Self-Attention + Residual Add & Norm
+    # Output shape remains (B, L, d_model)
+    attn_out = encoder_layer_self_attention_sublayer(
+        x, w_q, w_k, w_v, w_o, 
+        attn_gamma, attn_beta, 
+        num_heads, src_mask
+    )
+    
+    # 3. Sublayer 2: Position-Wise Feed-Forward Network + Residual Add & Norm
+    # The output of the attention sublayer becomes the input to the FFN sublayer
+    layer_out = encoder_layer_feed_forward_sublayer(
+        attn_out, w1, b1, w2, b2, 
+        ffn_gamma, ffn_beta
+    )
+    
+    return layer_out
 
 # Step 42 - stack_encoder_layers (not yet solved)
 # TODO: implement
