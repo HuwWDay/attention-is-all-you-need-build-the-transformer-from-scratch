@@ -455,8 +455,25 @@ def encoder_layer_self_attention_sublayer(x, w_q, w_k, w_v, w_o, gamma, beta, nu
     # Passing the original 'x' is what creates the residual highway
     return apply_residual_add_and_norm(attn_output, x, gamma, beta)
 
-# Step 40 - encoder_layer_feed_forward_sublayer (not yet solved)
-# TODO: implement
+# Step 40 - encoder_layer_feed_forward_sublayer
+import torch
+
+def encoder_layer_feed_forward_sublayer(x, w1, b1, w2, b2, gamma, beta):
+    """Run the position-wise FFN on x and wrap it with residual add-and-norm.
+    
+    Shapes:
+        x: (B, L, d_model)
+        w1: (d_model, d_ff)
+        b1: (d_ff,)
+        w2: (d_ff, d_model)
+        b2: (d_model,)
+    """
+    # 1. Run the position-wise feed-forward network
+    ffn_output = position_wise_feed_forward_network(x, w1, b1, w2, b2)
+    
+    # 2. Apply the residual shortcut and layer normalization
+    # Formula: LayerNorm(x + FFN(x))
+    return apply_residual_add_and_norm(ffn_output, x, gamma, beta)
 
 # Step 41 - assemble_encoder_layer (not yet solved)
 # TODO: implement
