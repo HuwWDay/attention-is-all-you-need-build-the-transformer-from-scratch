@@ -991,8 +991,31 @@ def set_confidence_on_gold_tokens(smoothed_distribution, gold_token_ids, confide
     
     return out_distribution
 
-# Step 60 - zero_pad_column_and_pad_token_rows (not yet solved)
-# TODO: implement
+# Step 60 - zero_pad_column_and_pad_token_rows
+import torch
+
+def zero_pad_column_and_pad_token_rows(smoothed_distribution, gold_token_ids, pad_id):
+    """Zero the pad column and the rows where the gold token equals pad_id.
+    
+    Shapes:
+        smoothed_distribution: (B, T, V)
+        gold_token_ids: (B, T)
+    """
+    # 1. Clone the input distribution to avoid in-place mutation errors
+    out_distribution = smoothed_distribution.clone()
+    
+    # 2. Condition 1: Zero out the entire padding column across all batches and time steps
+    out_distribution[..., pad_id] = 0.0
+    
+    # 3. Condition 2: Identify positions where the true label is a padding token
+    # Create a mask of shape (B, T) where True means it is a pad token row
+    pad_row_mask = (gold_token_ids == pad_id)
+    
+    # 4. Zero out those specific rows completely
+    # Using unsqueeze(-1) or broadcasting allows us to clear the entire vocabulary row
+    out_distribution[pad_row_mask] = 0.0
+    
+    return out_distribution
 
 # Step 61 - compute_label_smoothed_kl_loss (not yet solved)
 # TODO: implement
