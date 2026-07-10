@@ -432,8 +432,28 @@ def apply_dropout_with_keep_mask(x, keep_mask, keep_prob):
     # TODO: multiply x by the boolean keep_mask and rescale by 1/keep_prob.
     return x * keep_mask / keep_prob
 
-# Step 39 - encoder_layer_self_attention_sublayer (not yet solved)
-# TODO: implement
+# Step 39 - encoder_layer_self_attention_sublayer
+import torch
+
+def encoder_layer_self_attention_sublayer(x, w_q, w_k, w_v, w_o, gamma, beta, num_heads, src_mask):
+    """Run multi-head self-attention on x and wrap with residual add-and-norm.
+    
+    Shapes:
+        x: (B, L, d_model)
+        gamma, beta: (d_model,) - LayerNorm learnable scale and shift parameters
+    """
+    # 1. Run Multi-Head Self-Attention
+    # Since it is self-attention, Query, Key, and Value are all the same input tensor `x`
+    attn_output = assemble_multi_head_attention_forward(
+        query=x, key=x, value=x, 
+        w_q=w_q, w_k=w_k, w_v=w_v, w_o=w_o, 
+        num_heads=num_heads, mask=src_mask
+    )
+    
+    # 2. Apply Residual Connection followed by Layer Normalization
+    # Formula: LayerNorm(x + Attention(x))
+    # Passing the original 'x' is what creates the residual highway
+    return apply_residual_add_and_norm(attn_output, x, gamma, beta)
 
 # Step 40 - encoder_layer_feed_forward_sublayer (not yet solved)
 # TODO: implement
