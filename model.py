@@ -602,8 +602,56 @@ def decoder_layer_feed_forward_sublayer(y, w1, b1, w2, b2, gamma, beta):
     # Formula: LayerNorm(y + FFN(y))
     return apply_residual_add_and_norm(ffn_output, y, gamma, beta)
 
-# Step 46 - assemble_decoder_layer (not yet solved)
-# TODO: implement
+# Step 46 - assemble_decoder_layer
+def assemble_decoder_layer(y, encoder_output, layer_params, num_heads, src_mask, tgt_mask):
+    """Run a full decoder layer: masked self-attention, cross-attention, then FFN."""
+    
+    # 1. Unpack Masked Self-Attention Parameters
+    w_q_self, w_k_self, w_v_self, w_o_self = (
+        layer_params["w_q_self"], layer_params["w_k_self"], 
+        layer_params["w_v_self"], layer_params["w_o_self"]
+    )
+    self_gamma, self_beta = layer_params["self_gamma"], layer_params["self_beta"]
+    
+    # 2. Unpack Cross-Attention Parameters
+    w_q_cross, w_k_cross, w_v_cross, w_o_cross = (
+        layer_params["w_q_cross"], layer_params["w_k_cross"], 
+        layer_params["w_v_cross"], layer_params["w_o_cross"]
+    )
+    cross_gamma, cross_beta = layer_params["cross_gamma"], layer_params["cross_beta"]
+    
+    # 3. Unpack Feed-Forward Network Parameters
+    w1, b1, w2, b2 = layer_params["w1"], layer_params["b1"], layer_params["w2"], layer_params["b2"]
+    ffn_gamma, ffn_beta = layer_params["ffn_gamma"], layer_params["ffn_beta"]
+
+    # ──── STEP 1: Masked Self-Attention Sublayer ────
+    # Processes the target sequence and prevents looking ahead
+    y_self = decoder_layer_masked_self_attention_sublayer(
+        y=y, 
+        w_q=w_q_self, w_k=w_k_self, w_v=w_v_self, w_o=w_o_self, 
+        gamma=self_gamma, beta=self_beta, 
+        num_heads=num_heads, tgt_mask=tgt_mask
+    )
+    
+    # ──── STEP 2: Cross-Attention Sublayer ────
+    # Attends to the encoder hidden states using the self-attention output as Query
+    y_cross = decoder_layer_cross_attention_sublayer(
+        y=y_self, 
+        encoder_output=encoder_output, 
+        w_q=w_q_cross, w_k=w_k_cross, w_v=w_v_cross, w_o=w_o_cross, 
+        gamma=cross_gamma, beta=cross_beta, 
+        num_heads=num_heads, src_mask=src_mask
+    )
+    
+    # ──── STEP 3: Feed-Forward Network Sublayer ────
+    # Final non-linear mapping per token position
+    layer_output = decoder_layer_feed_forward_sublayer(
+        y=y_cross, 
+        w1=w1, b1=b1, w2=w2, b2=b2, 
+        gamma=ffn_gamma, beta=ffn_beta
+    )
+    
+    return layer_output
 
 # Step 47 - stack_decoder_layers (not yet solved)
 # TODO: implement
