@@ -376,7 +376,7 @@ def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o,
     merged_context = merge_heads_back_to_model_dim(context_heads)
     
     # 5. Output linear projection layer -> shape: (B, L, d_model)
-    output = torch.matmul(merged_context, w_o)
+    output = apply_linear_projection(merged_context, w_o, None)
     
     return output
 
