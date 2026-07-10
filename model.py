@@ -824,8 +824,51 @@ def init_encoder_layer_parameters(d_model, num_heads, d_ff):
 
     return out
 
-# Step 53 - init_decoder_layer_parameters (not yet solved)
-# TODO: implement
+# Step 53 - init_decoder_layer_parameters
+import torch
+import math
+
+def init_decoder_layer_parameters(d_model, num_heads, d_ff):
+    """Return a dict of requires_grad tensors for one decoder layer.
+    
+    All projection weights are properly initialized via Xavier Uniform distribution.
+    Biases and LayerNorm scales/shifts are initialized to standard defaults.
+    """
+    out = {}
+    
+    # 1. Compute uniform initialization bounds based on incoming dimensions
+    bound_attn = 1.0 / math.sqrt(d_model)
+    bound_ffn = 1.0 / math.sqrt(d_ff)
+    
+    # ─── SUB-LAYER 1: MASKED SELF-ATTENTION ──────────────────────────
+    out["w_q_self"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_k_self"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_v_self"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_o_self"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    
+    out["self_gamma"] = torch.ones(d_model, requires_grad=True)
+    out["self_beta"] = torch.zeros(d_model, requires_grad=True)
+    
+    # ─── SUB-LAYER 2: CROSS-ATTENTION ─────────────────────────────────
+    out["w_q_cross"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_k_cross"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_v_cross"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w_o_cross"] = (torch.rand((d_model, d_model)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    
+    out["cross_gamma"] = torch.ones(d_model, requires_grad=True)
+    out["cross_beta"] = torch.zeros(d_model, requires_grad=True)
+    
+    # ─── SUB-LAYER 3: POSITION-WISE FFN ───────────────────────────────
+    out["w1"] = (torch.rand((d_model, d_ff)) * 2 * bound_attn - bound_attn).detach().requires_grad_(True)
+    out["w2"] = (torch.rand((d_ff, d_model)) * 2 * bound_ffn - bound_ffn).detach().requires_grad_(True)
+    
+    out["b1"] = torch.zeros(d_ff, requires_grad=True)    # Matches w1 output channel size -> (d_ff,)
+    out["b2"] = torch.zeros(d_model, requires_grad=True) # Matches w2 output channel size -> (d_model,)
+    
+    out["ffn_gamma"] = torch.ones(d_model, requires_grad=True)
+    out["ffn_beta"] = torch.zeros(d_model, requires_grad=True)
+    
+    return out
 
 # Step 54 - init_embedding_and_projection_parameters (not yet solved)
 # TODO: implement
