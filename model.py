@@ -283,8 +283,24 @@ def transpose_heads_before_sequence(split_tensor):
     # TODO: rearrange (B, L, num_heads, d_k) into (B, num_heads, L, d_k).
     return torch.transpose(split_tensor, 1, 2)
 
-# Step 25 - merge_heads_back_to_model_dim (not yet solved)
-# TODO: implement
+# Step 25 - merge_heads_back_to_model_dim
+import torch
+
+def merge_heads_back_to_model_dim(multi_head_tensor):
+    """Merge the head axis back into the feature axis to reconstruct d_model.
+    
+    Input shape:  (B, num_heads, L, d_v)
+    Output shape: (B, L, d_model) where d_model = num_heads * d_v
+    """
+    B, num_heads, L, d_v = multi_head_tensor.shape
+    
+    # 1. Permute axes from (B, num_heads, L, d_v) -> (B, L, num_heads, d_v)
+    # This aligns the memory properly so sequence tokens stay isolated.
+    permuted = multi_head_tensor.permute(0, 2, 1, 3)
+    
+    # 2. Reshape into (B, L, d_model)
+    # Calling .contiguous() ensures the memory layout is clean before reshaping
+    return permuted.contiguous().view(B, L, num_heads * d_v)
 
 # Step 26 - apply_linear_projection (not yet solved)
 # TODO: implement
