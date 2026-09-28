@@ -1133,6 +1133,14 @@ def apply_adam_bias_correction(m_t, v_t, beta1, beta2, step):
     # TODO: divide each moment by (1 - beta**step) using its respective beta
     return m_t / (1-beta1**step), v_t/(1-beta2**step)
 
+# Step 68 - compute_adam_parameter_update
+import torch
+
+def compute_adam_parameter_update(m_hat, v_hat, learning_rate, epsilon):
+    """Return delta = learning_rate * m_hat / (sqrt(v_hat) + epsilon); the caller subtracts it."""
+    # TODO: compute the Adam step from the bias-corrected moments without tracking gradients
+    return learning_rate* m_hat / (torch.sqrt(v_hat)+epsilon)
+
 # Step 69 - apply_adam_step_to_all_parameters
 # ── Step 069  apply_adam_step_to_all_parameters ──
 import torch
